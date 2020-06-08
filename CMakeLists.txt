@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.7)
+include(GNUInstallDirs)
 
 if(POLICY CMP0048)
     # cmake warns if loaded from a min-3.0-required parent dir, so silence the warning:
