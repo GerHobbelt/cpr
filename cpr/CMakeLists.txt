@@ -1,6 +1,6 @@
 message(STATUS "Using CURL_INCLUDE_DIRS: ${CURL_INCLUDE_DIRS}.")
 
-add_library(${CPR_LIBRARIES}
+add_library(${CPR_LIBRARIES} SHARED
 
     # Source files
     auth.cpp
