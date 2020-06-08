@@ -82,6 +82,17 @@ cpr_option(USE_SYSTEM_GTEST
     "If ON, this project will look in the system paths for an installed gtest library" OFF)
 cpr_option(CMAKE_USE_OPENSSL "Use OpenSSL code. Experimental" ON)
 message(STATUS "=======================================================")
+include(CMakePackageConfigHelpers)
+set(ConfigPackageLocation "${CMAKE_INSTALL_LIBDIR}/cmake/cpr-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
+
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/cpr-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cpr-config.cmake
+              ${CMAKE_CURRENT_BINARY_DIR}/cpr-config-version.cmake
+        DESTINATION ${ConfigPackageLocation})
 
 if(BUILD_CPR_TESTS)
     enable_testing()

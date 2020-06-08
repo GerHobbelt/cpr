@@ -52,8 +52,9 @@ target_link_libraries(${CPR_LIBRARIES}
 if(NOT (CMAKE_VERSION VERSION_LESS 3.0))
     target_include_directories(${CPR_LIBRARIES}
         PUBLIC
-        ${CPR_INCLUDE_DIRS}
-        ${CURL_INCLUDE_DIRS})
+        PRIVATE ${CPR_INCLUDE_DIRS}
+        PUBLIC ${CURL_INCLUDE_DIRS}
+        INTERFACE $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 else()
     include_directories(
         ${CPR_INCLUDE_DIRS}
@@ -67,6 +68,11 @@ set_target_properties(${CPR_LIBRARIES}
      SOVERSION ${${PROJECT_NAME}_VERSION_MAJOR})
 
 install(TARGETS ${CPR_LIBRARIES}
+        EXPORT cpr_targets
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(EXPORT cpr_targets
+        FILE cpr_targets.cmake
+        DESTINATION ${ConfigPackageLocation})
