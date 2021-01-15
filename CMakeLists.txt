@@ -53,7 +53,7 @@ endif()
 include(GNUInstallDirs)
 include(FetchContent)
 include(cmake/code_coverage.cmake)
-include(cmake/sanitizer.cmake)
+
 get_property(isMultiConfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if (NOT isMultiConfig)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${ALLOWED_BUILD_TYPES}")
