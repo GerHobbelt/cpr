@@ -892,7 +892,13 @@ TEST(CallbackDataTests, CallbackDebugFunctionTextTest) {
     EXPECT_EQ(body.str(), debug_body);
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_callback_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();

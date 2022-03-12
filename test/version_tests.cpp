@@ -59,7 +59,13 @@ TEST(VersionTests, VersionNumExists) {
 }
 
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_version_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

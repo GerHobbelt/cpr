@@ -92,7 +92,13 @@ TEST(ErrorTests, BoolTrueTest) {
     EXPECT_TRUE(error);
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_error_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();

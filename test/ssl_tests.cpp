@@ -93,7 +93,13 @@ std::string getBasePath(const std::string& execPath) {
     return path;
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_ssl_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
 
     std::string baseDirPath = getBasePath(argv[0]);

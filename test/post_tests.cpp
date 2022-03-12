@@ -478,7 +478,13 @@ TEST(PostRedirectTests, PermRedirectNoneTest) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_post_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();

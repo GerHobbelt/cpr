@@ -156,7 +156,13 @@ TEST(AlternatingTests, PutPostTest) {
     }
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_alternating_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();

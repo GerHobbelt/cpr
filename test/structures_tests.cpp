@@ -56,7 +56,13 @@ TEST(UrlToAndFromString, UrlTests) {
     EXPECT_EQ(s, url.str());
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main      cpr_structures_tests_main
+#endif
+
+int main(int argc, const char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
