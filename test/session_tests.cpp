@@ -897,6 +897,22 @@ TEST(CurlHolderManipulateTests, CustomOptionTest) {
     }
 }
 
+TEST(BasicTests, ReserveResponseString) {
+    Url url{server->GetBaseUrl() + "/hello.html"};
+    Session session;
+    session.SetUrl(url);
+    session.ResponseStringReserve(4096);
+    Response response = session.Get();
+    std::string expected_text{"Hello world!"};
+    EXPECT_EQ(expected_text, response.text);
+    EXPECT_GE(response.text.capacity(), 4096);
+    EXPECT_EQ(url, response.url);
+    EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
+    EXPECT_EQ(200, response.status_code);
+    EXPECT_EQ(ErrorCode::OK, response.error.code);
+}
+
+
 
 #if defined(BUILD_MONOLITHIC)
 #define main      cpr_session_test_main
