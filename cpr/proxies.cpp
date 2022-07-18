@@ -1,4 +1,4 @@
-#include "cpr/proxies.h"
+﻿#include "cpr/proxies.h"
 
 #include <initializer_list>
 #include <map>
@@ -11,6 +11,12 @@ Proxies::Proxies(const std::initializer_list<std::pair<const std::string, std::s
 
 bool Proxies::has(const std::string& protocol) const {
     return hosts_.count(protocol) > 0;
+}
+
+std::string& Proxies::protocol() {
+    if (hosts_.empty())
+        return "";
+    return hosts_.begin()->first;
 }
 
 const std::string& Proxies::operator[](const std::string& protocol) {
