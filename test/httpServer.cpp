@@ -406,47 +406,21 @@ void HttpServer::OnRequestFormPost(mg_connection* conn, http_message* msg) {
     size_t chunk_len = 0;
     size_t n1 = 0;
     size_t n2 = 0;
-    std::map<std::string, std::string> forms;
-    std::map<std::string, std::string> filenames;
-
-    while ((n2 = mg_parse_multipart(msg->body.p + n1, msg->body.len - n1, var_name, sizeof(var_name), file_name, sizeof(file_name), &chunk, &chunk_len)) > 0) {
-        n1 += n2;
-        forms[var_name] = std::string(chunk, chunk_len);
-        filenames[var_name] = std::string(file_name);
-    }
 
     std::string headers = "Content-Type: application/json";
-    std::string response;
-    if (forms.find("y") == forms.end()) {
-        if (!filenames["x"].empty()) {
-            response = std::string{
-                    "{\n"
-                    "  \"x\": " +
-                    filenames["x"] + "=" + forms["x"] +
-                    "\n"
-                    "}"};
-        } else {
-            response = std::string{
-                    "{\n"
-                    "  \"x\": " +
-                    forms["x"] +
-                    "\n"
-                    "}"};
+    std::string response{""};
+    response += "{\n";
+    while ((n2 = mg_parse_multipart(msg->body.p + n1, msg->body.len - n1, var_name, sizeof(var_name), file_name, sizeof(file_name), &chunk, &chunk_len)) > 0) {
+        n1 += n2;
+        response += "  \"" + std::string(var_name) + "\": \"";
+        if (!std::string(file_name).empty()) {
+            response += std::string(file_name) + "=";
         }
-    } else {
-        response = std::string{
-                "{\n"
-                "  \"x\": " +
-                forms["x"] +
-                ",\n"
-                "  \"y\": " +
-                forms["y"] +
-                ",\n"
-                "  \"sum\": " +
-                std::to_string(atoi(forms["x"].c_str()) + atoi(forms["y"].c_str())) +
-                "\n"
-                "}"};
+        response += std::string(chunk, chunk_len) + "\",\n";
     }
+    response.erase(response.find_last_not_of(",\n") + 1);
+    response += "\n}";
+
     mg_send_head(conn, 201, response.length(), headers.c_str());
     mg_send(conn, response.c_str(), response.length());
 }
@@ -780,6 +754,22 @@ void HttpServer::OnRequestCheckAcceptEncoding(mg_connection* conn, http_message*
     mg_send(conn, response.c_str(), response.length());
 }
 
+void HttpServer::OnRequestCheckExpect100Continue(mg_connection* conn, http_message* msg) {
+    std::string response;
+    for (size_t i = 0; i < sizeof(msg->header_names) / sizeof(mg_str); i++) {
+        if (!msg->header_names[i].p) {
+            continue;
+        }
+        std::string name = std::string(msg->header_names[i].p, msg->header_names[i].len);
+        if (std::string{"Expect"} == name) {
+            response = std::string(msg->header_values[i].p, msg->header_values[i].len);
+        }
+    }
+    std::string headers = "Content-Type: text/html";
+    mg_send_head(conn, 200, response.length(), headers.c_str());
+    mg_send(conn, response.c_str(), response.length());
+}
+
 void HttpServer::OnRequest(mg_connection* conn, http_message* msg) {
     std::string uri = std::string(msg->uri.p, msg->uri.len);
     if (uri == "/") {
@@ -846,6 +836,8 @@ void HttpServer::OnRequest(mg_connection* conn, http_message* msg) {
         OnRequestLocalPort(conn, msg);
     } else if (uri == "/check_accept_encoding.html") {
         OnRequestCheckAcceptEncoding(conn, msg);
+    } else if (uri == "/check_expect_100_continue.html") {
+        OnRequestCheckExpect100Continue(conn, msg);
     } else {
         OnRequestNotFound(conn, msg);
     }

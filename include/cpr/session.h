@@ -42,6 +42,7 @@ namespace cpr {
 using AsyncResponse = std::future<Response>;
 
 class Interceptor;
+class MultiPerform;
 
 class Session : public std::enable_shared_from_this<Session> {
   public:
@@ -180,19 +181,19 @@ class Session : public std::enable_shared_from_this<Session> {
     AsyncResponse PutAsync();
 
     template <typename Then>
-    auto GetCallback(Then then) -> std::future<decltype(then(Get()))>;
+    auto GetCallback(Then then);
     template <typename Then>
-    auto PostCallback(Then then) -> std::future<decltype(then(Post()))>;
+    auto PostCallback(Then then);
     template <typename Then>
-    auto PutCallback(Then then) -> std::future<decltype(then(Put()))>;
+    auto PutCallback(Then then);
     template <typename Then>
-    auto HeadCallback(Then then) -> std::future<decltype(then(Head()))>;
+    auto HeadCallback(Then then);
     template <typename Then>
-    auto DeleteCallback(Then then) -> std::future<decltype(then(Delete()))>;
+    auto DeleteCallback(Then then);
     template <typename Then>
-    auto OptionsCallback(Then then) -> std::future<decltype(then(Options()))>;
+    auto OptionsCallback(Then then);
     template <typename Then>
-    auto PatchCallback(Then then) -> std::future<decltype(then(Patch()))>;
+    auto PatchCallback(Then then);
 
     std::shared_ptr<CurlHolder> GetCurlHolder();
     std::string GetFullRequestUrl();
@@ -204,13 +205,17 @@ class Session : public std::enable_shared_from_this<Session> {
     void PreparePatch();
     void PreparePost();
     void PreparePut();
+    void PrepareDownload(const WriteCallback& write);
+    void PrepareDownload(std::ofstream& file);
     Response Complete(CURLcode curl_error);
+    Response CompleteDownload(CURLcode curl_error);
 
     void AddInterceptor(const std::shared_ptr<Interceptor>& pinterceptor);
 
   private:
     // Interceptors should be able to call the private procceed() function
     friend Interceptor;
+    friend MultiPerform;
 
     bool hasBodyOrPayload_{false};
     bool chunkedTransferEncoding_{false};
@@ -234,55 +239,51 @@ class Session : public std::enable_shared_from_this<Session> {
     std::string response_string_;
     std::string header_string_;
     std::queue<std::shared_ptr<Interceptor>> interceptors_;
+    bool isUsedInMultiPerform{false};
 
     Response makeDownloadRequest();
     Response makeRequest();
     Response proceed();
     void prepareCommon();
+    void prepareCommonDownload();
     void SetHeaderInternal();
     std::shared_ptr<Session> GetSharedPtrFromThis();
+    CURLcode DoEasyPerform();
 };
 
 template <typename Then>
-auto Session::GetCallback(Then then) -> std::future<decltype(then(Get()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Get()); }, std::move(then));
+auto Session::GetCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Get()); }, std::move(then));
 }
 
 template <typename Then>
-auto Session::PostCallback(Then then) -> std::future<decltype(then(Post()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Post()); }, std::move(then));
+auto Session::PostCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Post()); }, std::move(then));
 }
 
 template <typename Then>
-auto Session::PutCallback(Then then) -> std::future<decltype(then(Put()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Put()); }, std::move(then));
+auto Session::PutCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Put()); }, std::move(then));
 }
 
 template <typename Then>
-auto Session::HeadCallback(Then then) -> std::future<decltype(then(Head()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Head()); }, std::move(then));
+auto Session::HeadCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Head()); }, std::move(then));
 }
 
 template <typename Then>
-auto Session::DeleteCallback(Then then) -> std::future<decltype(then(Delete()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Delete()); }, std::move(then));
+auto Session::DeleteCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Delete()); }, std::move(then));
 }
 
 template <typename Then>
-auto Session::OptionsCallback(Then then) -> std::future<decltype(then(Options()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Options()); }, std::move(then));
+auto Session::OptionsCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Options()); }, std::move(then));
 }
 
 template <typename Then>
-auto Session::PatchCallback(Then then) -> std::future<decltype(then(Patch()))> {
-    auto shared_this = GetSharedPtrFromThis();
-    return async([shared_this](Then then_inner) { return then_inner(shared_this->Patch()); }, std::move(then));
+auto Session::PatchCallback(Then then) {
+    return async([shared_this = GetSharedPtrFromThis()](Then then_inner) { return then_inner(shared_this->Patch()); }, std::move(then));
 }
 
 } // namespace cpr

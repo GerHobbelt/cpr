@@ -81,7 +81,7 @@ Add the following to your `CMakeLists.txt`.
 ```cmake
 include(FetchContent)
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
-                         GIT_TAG 6ea2dec23c3df14ac3b27b7d2d6bbff0cb7ba1b0) # The commit hash for 1.8.1. Replace with the latest from: https://github.com/libcpr/cpr/releases
+                         GIT_TAG 871ed52d350214a034f6ef8a3b8f51c5ce1bd400) # The commit hash for 1.9.0. Replace with the latest from: https://github.com/libcpr/cpr/releases
 FetchContent_MakeAvailable(cpr)
 ```
 
@@ -104,6 +104,12 @@ Currently, we are aware of packages for the following distributions:
 * [Arch Linux (AUR)](https://aur.archlinux.org/packages/cpr)
 
 If there's no package for your distribution, try making one! If you do, and it is added to your distribution's repositories, please submit a pull request to add it to the list above. However, please only do this if you plan to actively maintain the package.
+
+### NuGet Package
+
+For Windows there is also a libcpr NuGet package available. Currently x86 and x64 builds are supported with release and debug configuration.
+
+The package can be found here: [NuGet.org](https://www.nuget.org/packages/libcpr/)
 
 ## Requirements
 

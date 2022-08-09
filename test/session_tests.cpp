@@ -9,6 +9,7 @@
 #include "httpServer.hpp"
 
 using namespace cpr;
+using namespace std::chrono_literals;
 
 static HttpServer* server = new HttpServer();
 std::chrono::milliseconds sleep_time{50};
@@ -450,6 +451,31 @@ TEST(TimeoutTests, SetChronoTimeoutLongTest) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
+TEST(TimeoutTests, SetChronoLiteralTimeoutTest) {
+    Url url{server->GetBaseUrl() + "/hello.html"};
+    Session session;
+    session.SetUrl(url);
+    session.SetTimeout(2s);
+    Response response = session.Get();
+    std::string expected_text{"Hello world!"};
+    EXPECT_EQ(expected_text, response.text);
+    EXPECT_EQ(url, response.url);
+    EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
+    EXPECT_EQ(200, response.status_code);
+    EXPECT_EQ(ErrorCode::OK, response.error.code);
+}
+
+TEST(TimeoutTests, SetChronoLiteralTimeoutLowSpeed) {
+    Url url{server->GetBaseUrl() + "/low_speed_timeout.html"};
+    Session session;
+    session.SetUrl(url);
+    session.SetTimeout(1000ms);
+    Response response = session.Get();
+    EXPECT_EQ(url, response.url);
+    EXPECT_FALSE(response.status_code == 200);
+    EXPECT_EQ(ErrorCode::OPERATION_TIMEDOUT, response.error.code);
+}
+
 TEST(ConnectTimeoutTests, SetConnectTimeoutTest) {
     Url url{server->GetBaseUrl() + "/hello.html"};
     Session session;
@@ -563,7 +589,7 @@ TEST(MultipartTests, SetMultipartTest) {
     Response response = session.Post();
     std::string expected_text{
             "{\n"
-            "  \"x\": 5\n"
+            "  \"x\": \"5\"\n"
             "}"};
     EXPECT_EQ(expected_text, response.text);
     EXPECT_EQ(url, response.url);
@@ -581,7 +607,7 @@ TEST(MultipartTests, SetMultipartValueTest) {
     Response response = session.Post();
     std::string expected_text{
             "{\n"
-            "  \"x\": 5\n"
+            "  \"x\": \"5\"\n"
             "}"};
     EXPECT_EQ(expected_text, response.text);
     EXPECT_EQ(url, response.url);
@@ -642,6 +668,22 @@ TEST(DigestTests, SetDigestTest) {
 TEST(UserAgentTests, SetUserAgentTest) {
     Url url{server->GetBaseUrl() + "/header_reflect.html"};
     UserAgent userAgent{"Test User Agent"};
+    Session session;
+    session.SetUrl(url);
+    session.SetUserAgent(userAgent);
+    Response response = session.Get();
+    std::string expected_text{"Header reflect GET"};
+    EXPECT_EQ(expected_text, response.text);
+    EXPECT_EQ(url, response.url);
+    EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
+    EXPECT_EQ(userAgent, response.header["User-Agent"]);
+    EXPECT_EQ(200, response.status_code);
+    EXPECT_EQ(ErrorCode::OK, response.error.code);
+}
+
+TEST(UserAgentTests, SetUserAgentStringViewTest) {
+    Url url{server->GetBaseUrl() + "/header_reflect.html"};
+    UserAgent userAgent{std::string_view{"Test User Agent"}};
     Session session;
     session.SetUrl(url);
     session.SetUserAgent(userAgent);
@@ -1101,6 +1143,25 @@ TEST(BasicTests, AcceptEncodingTestWithCostomizedStringLValue) {
     EXPECT_EQ(expected_text, response.text);
     EXPECT_EQ(url, response.url);
     EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
+    EXPECT_EQ(200, response.status_code);
+    EXPECT_EQ(ErrorCode::OK, response.error.code);
+}
+
+TEST(BasicTests, DisableHeaderExpect100ContinueTest) {
+    Url url{server->GetBaseUrl() + "/check_expect_100_continue.html"};
+    std::string filename{"test_file"};
+    std::string content{std::string(1024 * 1024, 'a')};
+    std::ofstream test_file;
+    test_file.open(filename);
+    test_file << content;
+    test_file.close();
+    Session session{};
+    session.SetUrl(url);
+    session.SetMultipart({{"file", File{"test_file"}}});
+    Response response = session.Post();
+    std::string expected_text{""};
+    EXPECT_EQ(expected_text, response.text);
+    EXPECT_EQ(url, response.url);
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
