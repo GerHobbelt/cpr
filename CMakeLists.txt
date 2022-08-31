@@ -53,6 +53,7 @@ message(STATUS "C++ Requests CMake Options")
 message(STATUS "=======================================================")
 cpr_option(CPR_GENERATE_COVERAGE "Set to ON to generate coverage reports." OFF)
 cpr_option(CPR_CURL_NOSIGNAL "Set to ON to disable use of signals in libcurl." OFF)
+cpr_option(CURL_VERBOSE_LOGGING "Curl verbose logging during building curl" OFF)
 cpr_option(CPR_USE_SYSTEM_GTEST "If ON, this project will look in the system paths for an installed gtest library. If none is found it will use the build in one." OFF)
 cpr_option(CPR_USE_SYSTEM_CURL "If enabled we will use the curl lib already installed on this system." OFF)
 cpr_option(CPR_ENABLE_SSL "Enables or disables the SSL backend. Required to perform HTTPS requests." ON)
@@ -227,6 +228,11 @@ else()
     set(BUILD_CURL_EXE OFF CACHE INTERNAL "" FORCE)
     set(BUILD_TESTING OFF)
 
+    if (CURL_VERBOSE_LOGGING)
+        message(STATUS "Enabled curl debug features")
+        set(ENABLE_DEBUG ON CACHE INTERNAL "" FORCE)
+    endif()
+
     if (CPR_ENABLE_SSL)
         set(SSL_ENABLED ON CACHE INTERNAL "" FORCE)
         if(ANDROID)
@@ -237,10 +243,10 @@ else()
             set(CURL_CA_PATH "auto" CACHE INTERNAL "")
         endif()
 
-        if(NOT DEFINED CURL_CA_BUNDLE)
-            set(CURL_CA_BUNDLE "auto" CACHE INTERNAL "")
-        elseif(CPR_SKIP_CA_BUNDLE_SEARCH)
+        if(CPR_SKIP_CA_BUNDLE_SEARCH)
             set(CURL_CA_BUNDLE "none" CACHE INTERNAL "")
+        elseif(NOT DEFINED CURL_CA_BUNDLE)
+            set(CURL_CA_BUNDLE "auto" CACHE INTERNAL "")
         endif()
 
         if(SSL_BACKEND_USED STREQUAL "WinSSL")
@@ -348,8 +354,8 @@ if(CPR_BUILD_TESTS)
     clear_variable(DESTINATION CMAKE_CXX_CLANG_TIDY BACKUP CMAKE_CXX_CLANG_TIDY_BKP)
 
     FetchContent_Declare(mongoose 
-                         URL                    https://github.com/cesanta/mongoose/archive/6.18.tar.gz
-                         URL_HASH               SHA256=f5c10346abc9c72f7cac7885d853ca064fb09aad57580433941a8fd7a3543769 # the hash for 6.18.tar.gz
+                         URL                    https://github.com/cesanta/mongoose/archive/7.7.tar.gz
+                         URL_HASH               SHA256=4e5733dae31c3a81156af63ca9aa3a6b9b736547f21f23c3ab2f8e3f1ecc16c0 # the hash for 7.7.tar.gz
                          USES_TERMINAL_DOWNLOAD TRUE)   # <---- This is needed only for Ninja to show download progress
     # We can not use FetchContent_MakeAvailable, since we need to patch mongoose to use CMake
     if (NOT mongoose_POPULATED)
