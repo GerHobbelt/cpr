@@ -66,6 +66,7 @@ cpr_option(CPR_ENABLE_CPPCHECK "Set to ON to enable Cppcheck static analysis. Re
 cpr_option(CPR_BUILD_TESTS "Set to ON to build cpr tests." OFF)
 cpr_option(CPR_BUILD_TESTS_SSL "Set to ON to build cpr ssl tests" ${CPR_BUILD_TESTS})
 cpr_option(CPR_SKIP_CA_BUNDLE_SEARCH "Skip searching for Certificate Authority certs. Turn ON systems like iOS where file access is restricted and prevents https from working." OFF)
+cpr_option(CPR_USE_BOOST_FILESYSTEM "Set to ON to use the Boost.Filesystem library on OSX." OFF)
 message(STATUS "=======================================================")
 
 if (CPR_FORCE_USE_SYSTEM_CURL)
@@ -376,7 +377,7 @@ add_subdirectory(cpr)
 add_subdirectory(include)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND CPR_BUILD_TESTS)
-    # Disable linting for test since they are currently not up to the standard
+    # Disable linting for tests since they are currently not up to the standard
     clear_variable(DESTINATION CMAKE_CXX_CLANG_TIDY BACKUP CMAKE_CXX_CLANG_TIDY_BKP)
     enable_testing()
     add_subdirectory(test)
