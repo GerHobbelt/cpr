@@ -10,11 +10,9 @@ namespace cpr {
 
 class Interface : public StringHolder<Interface> {
   public:
-    Interface() : StringHolder<Interface>() {}
+    Interface() = default;
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    Interface(const std::string& iface) : StringHolder<Interface>(iface) {}
-    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    Interface(std::string&& iface) : StringHolder<Interface>(std::move(iface)) {}
+    Interface(std::string iface) : StringHolder<Interface>(std::move(iface)) {}
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     Interface(std::string_view iface) : StringHolder<Interface>(iface) {}
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)

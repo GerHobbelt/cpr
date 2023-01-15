@@ -100,9 +100,9 @@ bool ThreadPool::CreateThread() {
             if (task) {
                 task();
                 ++idle_thread_num;
-            } else if (initialRun) {
-                ++idle_thread_num;
-                initialRun = false;
+                if (initialRun) {
+                    initialRun = false;
+                }
             }
         }
     });
@@ -124,7 +124,7 @@ void ThreadPool::AddThread(std::thread* thread) {
 }
 
 void ThreadPool::DelThread(std::thread::id id) {
-    time_t now = time(nullptr);
+    const time_t now = time(nullptr);
     thread_mutex.lock();
     --cur_thread_num;
     --idle_thread_num;

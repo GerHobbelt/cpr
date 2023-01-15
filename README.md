@@ -4,9 +4,10 @@
 ![CI](https://github.com/libcpr/cpr/workflows/CI/badge.svg)
 [![Gitter](https://badges.gitter.im/libcpr/community.svg)](https://gitter.im/libcpr/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
+### Expect slower response times as all maintainers are currently on vacation ✈️🏝️ until March 01, 2023.
+
 ## Announcements
 
-* Like you probably have noticed, `cpr` moved to a new home from https://github.com/whoshuu/cpr to https://github.com/libcpr/cpr. Read more [here](https://github.com/libcpr/cpr/issues/636).
 * This project is being maintained by [Fabian Sauter](https://github.com/com8) and [Kilian Traub](https://github.com/KingKili).
 * For quick help, and discussion libcpr also offer a [gitter](https://gitter.im/libcpr/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link) chat.
 
@@ -113,6 +114,11 @@ find_package(cpr REQUIRED)
 add_executable(your_target_name your_target_name.cpp)
 target_link_libraries(your_target_name PRIVATE cpr::cpr)
 ```
+
+### Bazel
+
+Please refer to [hedronvision/bazel-make-cc-https-easy](https://github.com/hedronvision/bazel-make-cc-https-easy).
+
 ### Packages for Linux Distributions
 
 Alternatively, you may install a package specific to your Linux distribution. Since so few distributions currently have a package for cpr, most users will not be able to run your program with this approach.

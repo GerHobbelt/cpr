@@ -30,13 +30,13 @@
 #include "cpr/range.h"
 #include "cpr/redirect.h"
 #include "cpr/reserve_size.h"
+#include "cpr/resolve.h"
 #include "cpr/response.h"
 #include "cpr/ssl_options.h"
 #include "cpr/timeout.h"
 #include "cpr/unix_socket.h"
 #include "cpr/user_agent.h"
 #include "cpr/verbose.h"
-#include "cpr/resolve.h"
 
 namespace cpr {
 
@@ -49,6 +49,7 @@ class Session : public std::enable_shared_from_this<Session> {
   public:
     Session();
     Session(const Session& other) = delete;
+    Session(Session&& old) = default;
 
     ~Session() = default;
 
@@ -218,7 +219,7 @@ class Session : public std::enable_shared_from_this<Session> {
     void AddInterceptor(const std::shared_ptr<Interceptor>& pinterceptor);
 
   private:
-    // Interceptors should be able to call the private procceed() function
+    // Interceptors should be able to call the private proceed() function
     friend Interceptor;
     friend MultiPerform;
 
@@ -249,6 +250,7 @@ class Session : public std::enable_shared_from_this<Session> {
     Response makeDownloadRequest();
     Response makeRequest();
     Response proceed();
+    Response intercept();
     void prepareCommon();
     void prepareCommonDownload();
     void SetHeaderInternal();

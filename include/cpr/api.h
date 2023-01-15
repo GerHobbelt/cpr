@@ -247,9 +247,13 @@ template <typename... Ts>
 AsyncResponse DownloadAsync(fs::path local_path, Ts... ts) {
     return std::async(
             std::launch::async,
-            [](fs::path local_path, Ts... ts) {
-                std::ofstream f(local_path);
-                return Download(f, std::move(ts)...);
+            [](fs::path local_path_, Ts... ts_) {
+#ifdef CPR_USE_BOOST_FILESYSTEM
+                std::ofstream f(local_path_.string());
+#else
+                std::ofstream f(local_path_);
+#endif
+                return Download(f, std::move(ts_)...);
             },
             std::move(local_path), std::move(ts)...);
 }

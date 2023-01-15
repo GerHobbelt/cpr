@@ -9,11 +9,9 @@
 namespace cpr {
 class UserAgent : public StringHolder<UserAgent> {
   public:
-    UserAgent() : StringHolder<UserAgent>() {}
+    UserAgent() = default;
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    UserAgent(const std::string& useragent) : StringHolder<UserAgent>(useragent) {}
-    // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
-    UserAgent(std::string&& useragent) : StringHolder<UserAgent>(std::move(useragent)) {}
+    UserAgent(std::string useragent) : StringHolder<UserAgent>(std::move(useragent)) {}
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
     UserAgent(std::string_view useragent) : StringHolder<UserAgent>(useragent) {}
     // NOLINTNEXTLINE(google-explicit-constructor, hicpp-explicit-conversions)
