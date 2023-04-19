@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(cpr VERSION 1.9.0 LANGUAGES CXX)
+project(cpr VERSION 1.11.0 LANGUAGES CXX)
 
 math(EXPR cpr_VERSION_NUM "${cpr_VERSION_MAJOR} * 0x10000 + ${cpr_VERSION_MINOR} * 0x100 + ${cpr_VERSION_PATCH}" OUTPUT_FORMAT HEXADECIMAL)
 configure_file("${cpr_SOURCE_DIR}/cmake/cprver.h.in" "${cpr_BINARY_DIR}/cpr_generated_includes/cpr/cprver.h")
@@ -56,6 +56,7 @@ cpr_option(CPR_CURL_NOSIGNAL "Set to ON to disable use of signals in libcurl." O
 cpr_option(CURL_VERBOSE_LOGGING "Curl verbose logging during building curl" OFF)
 cpr_option(CPR_USE_SYSTEM_GTEST "If ON, this project will look in the system paths for an installed gtest library. If none is found it will use the built-in one." OFF)
 cpr_option(CPR_USE_SYSTEM_CURL "If enabled we will use the curl lib already installed on this system." OFF)
+cpr_option(CPR_ENABLE_CURL_HTTP_ONLY "If enabled we will only use the HTTP/HTTPS protocols from CURL. If disabled, all the CURL protocols are enabled. This is useful if your project uses libcurl and you need support for other CURL features e.g. sending emails." ON)
 cpr_option(CPR_ENABLE_SSL "Enables or disables the SSL backend. Required to perform HTTPS requests." ON)
 cpr_option(CPR_FORCE_OPENSSL_BACKEND "Force to use the OpenSSL backend. If CPR_FORCE_OPENSSL_BACKEND, CPR_FORCE_DARWINSSL_BACKEND, CPR_FORCE_MBEDTLS_BACKEND, and CPR_FORCE_WINSSL_BACKEND are set to to OFF, cpr will try to automatically detect the best available SSL backend (WinSSL - Windows, OpenSSL - Linux, DarwinSSL - Mac ...)." OFF)
 cpr_option(CPR_FORCE_WINSSL_BACKEND "Force to use the WinSSL backend. If CPR_FORCE_OPENSSL_BACKEND, CPR_FORCE_DARWINSSL_BACKEND, CPR_FORCE_MBEDTLS_BACKEND, and CPR_FORCE_WINSSL_BACKEND are set to to OFF, cpr will try to automatically detect the best available SSL backend (WinSSL - Windows, OpenSSL - Linux, DarwinSSL - Mac ...)." OFF)
@@ -66,8 +67,8 @@ cpr_option(CPR_ENABLE_CPPCHECK "Set to ON to enable Cppcheck static analysis. Re
 cpr_option(CPR_BUILD_TESTS "Set to ON to build cpr tests." OFF)
 cpr_option(CPR_BUILD_TESTS_SSL "Set to ON to build cpr ssl tests" ${CPR_BUILD_TESTS})
 cpr_option(CPR_BUILD_TESTS_PROXY "Set to ON to build proxy tests. They fail in case there is no valid proxy server available in proxy_tests.cpp" OFF)
-cpr_option(CPR_SKIP_CA_BUNDLE_SEARCH "Skip searching for Certificate Authority certs. Turn ON systems like iOS where file access is restricted and prevents https from working." OFF)
-cpr_option(CPR_USE_BOOST_FILESYSTEM "Set to ON to use the Boost.Filesystem library on OSX." OFF)
+cpr_option(CPR_SKIP_CA_BUNDLE_SEARCH "Skip searching for Certificate Authority certs. Turn ON for systems like iOS where file access is restricted and prevents https from working." OFF)
+cpr_option(CPR_USE_BOOST_FILESYSTEM "Set to ON to use the Boost.Filesystem library. This is useful, on, e.g., Apple platforms, where std::filesystem may not always be available when targeting older OS versions." OFF)
 cpr_option(CPR_DEBUG_SANITIZER_FLAG_THREAD "Enables the ThreadSanitizer for debug builds." OFF)
 cpr_option(CPR_DEBUG_SANITIZER_FLAG_ADDR "Enables the AddressSanitizer for debug builds." OFF)
 cpr_option(CPR_DEBUG_SANITIZER_FLAG_LEAK "Enables the LeakSanitizer for debug builds." OFF)
@@ -213,8 +214,10 @@ else()
         include(cmake/zlib_external.cmake)
     endif()
 
-    # We only need HTTP (and HTTPS) support:
-    set(HTTP_ONLY ON CACHE INTERNAL "" FORCE)
+    if (CPR_ENABLE_CURL_HTTP_ONLY)
+        # We only need HTTP (and HTTPS) support:
+        set(HTTP_ONLY ON CACHE INTERNAL "" FORCE)
+    endif()
     set(BUILD_CURL_EXE OFF CACHE INTERNAL "" FORCE)
     set(BUILD_TESTING OFF)
 
@@ -268,6 +271,9 @@ else()
     # Disable linting for curl
     clear_variable(DESTINATION CMAKE_CXX_CLANG_TIDY BACKUP CMAKE_CXX_CLANG_TIDY_BKP)
 
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+        cmake_policy(SET CMP0135 NEW)
+    endif()
     FetchContent_Declare(curl
                          URL                    https://github.com/curl/curl/releases/download/curl-7_80_0/curl-7.80.0.tar.xz
                          URL_HASH               SHA256=a132bd93188b938771135ac7c1f3ac1d3ce507c1fcbef8c471397639214ae2ab # the file hash for curl-7.80.0.tar.xz
