@@ -20,8 +20,11 @@ jobs:
           sudo dnf install -y \
             gcc-c++ cmake ninja-build curl-devel fedora-packager
       - name: Build RPM packages
+        # move package-build/fedora-libcpr/cpr.spec to container
         run: |
-          rpmbuild -bb package-build/fedora-libcpr/cpr.spec
+          mkdir -p ~/rpmbuild/SPECS
+          cp package-build/fedora-libcpr/cpr.spec ~/rpmbuild/SPECS
+          rpmbuild -ba ~/rpmbuild/SPECS/cpr.spec
           mv ~/rpmbuild/RPMS/x86_64/cpr-*.rpm .
       - name: Upload RPM packages
         uses: actions/upload-artifact@v2
