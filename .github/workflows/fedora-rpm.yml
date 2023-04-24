@@ -16,8 +16,9 @@ jobs:
     container: fedora:${{ matrix.os_version }}
     steps:
       - name: Installing dependencies for building cpr RPM package
-        run: sudo dnf install -y \
-          gcc-c++ cmake ninja-build curl-devel fedora-packager
+        run: |
+          sudo dnf install -y \
+            gcc-c++ cmake ninja-build curl-devel fedora-packager
       - name: Build RPM packages
         run: |
           rpmbuild -bb package-build/fedora-libcpr/cpr.spec
