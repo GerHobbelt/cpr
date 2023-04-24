@@ -1,0 +1,28 @@
+
+name: Build Fedora RPM packages
+
+# trigger when publishing new release
+on:
+  release:
+    types: [published]
+
+jobs:
+  fedora-build:
+    strategy:
+      matrix:
+        os_version: [36, 37, 38, 39]
+    name: "Fedora ${{ matrix.os_version }}"
+    runs-on: ubuntu-latest
+    container: fedora:${{ matrix.os_version }}
+    steps:
+      - name: Installing dependencies for building cpr RPM package
+        run: sudo dnf install -y gcc-c++ cmake ninja-build curl-devel
+      - name: Build RPM packages
+        run: |
+          rpmbuild -bb package-build/fedora-libcpr/cpr.spec
+          mv ~/rpmbuild/RPMS/x86_64/cpr-*.rpm .
+      - name: Upload RPM packages
+        uses: actions/upload-artifact@v2
+        with:
+          name: cpr-${{ matrix.os_version }}
+          path: cpr-*.rpm
