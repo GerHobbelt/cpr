@@ -1547,6 +1547,17 @@ TEST(CallbackTests, PatchCallbackTest) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
+TEST(CallbackTests, Move) {
+    auto session = Session();
+    session.SetDebugCallback(DebugCallback([](auto, auto, auto) {}));
+
+    auto use = +[](Session s) {
+        s.SetUrl(server->GetBaseUrl());
+        s.Get();
+    };
+    use(std::move(session));
+}
+
 
 
 #if defined(BUILD_MONOLITHIC)
