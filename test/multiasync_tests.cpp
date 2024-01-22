@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
 
-#include <cpr/cpr.h>
+#include "cpr/cpr.h"
 
 #include "httpServer.hpp"
 #include "multiasync_tests.hpp"
@@ -19,8 +19,8 @@ TEST(AsyncWrapperTests, TestConstructorDeductions) {
     auto wrapper_non_cancellable{AsyncWrapper{std::future<std::string>{}}};
     auto wrapper_cancellable{AsyncWrapper{std::future<std::string>{}, std::make_shared<std::atomic_bool>(false)}};
 
-    static_assert(std::is_same<AsyncWrapper<std::string, false>, decltype(wrapper_non_cancellable)>::value);
-    static_assert(std::is_same<AsyncWrapper<std::string, true>, decltype(wrapper_cancellable)>::value);
+    static_assert(std::is_same_v<AsyncWrapper<std::string, false>, decltype(wrapper_non_cancellable)>);
+    static_assert(std::is_same_v<AsyncWrapper<std::string, true>, decltype(wrapper_cancellable)>);
     SUCCEED();
 }
 

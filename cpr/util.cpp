@@ -1,12 +1,14 @@
 #include "cpr/util.h"
-
+#include "cpr/callback.h"
+#include "cpr/cookies.h"
+#include "cpr/cprtypes.h"
+#include "cpr/curlholder.h"
 #include <algorithm>
-#include <cassert>
 #include <cctype>
 #include <chrono>
-#include <cstdint>
+#include <ctime>
+#include <curl/curl.h>
 #include <fstream>
-#include <iomanip>
 #include <ios>
 #include <sstream>
 #include <string>
@@ -15,9 +17,19 @@
 #if defined(_Win32)
 #include <Windows.h>
 #else
+#ifdef __clang__
+#pragma clang diagnostic push
+#if __has_warning("-Wreserved-macro-identifier") // Not all versions of clang support this flag like the one used on Ubuntu 18.04
+#pragma clang diagnostic ignored "-Wreserved-macro-identifier"
+#endif
+#pragma clang diagnostic ignored "-Wunused-macros"
+#endif
 // https://en.cppreference.com/w/c/string/byte/memset
 // NOLINTNEXTLINE(bugprone-reserved-identifier, cert-dcl37-c, cert-dcl51-cpp, cppcoreguidelines-macro-usage)
 #define __STDC_WANT_LIB_EXT1__ 1
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #include <cstring>
 #endif
 
@@ -221,7 +233,7 @@ void secureStringClear(std::string& s) {
 
 bool isTrue(const std::string& s) {
     std::string temp_string{s};
-    std::transform(temp_string.begin(), temp_string.end(), temp_string.begin(), [](unsigned char c) { return std::tolower(c); });
+    std::transform(temp_string.begin(), temp_string.end(), temp_string.begin(), [](unsigned char c) { return static_cast<unsigned char>(std::tolower(c)); });
     return temp_string == "true";
 }
 

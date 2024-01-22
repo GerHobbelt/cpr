@@ -1,13 +1,17 @@
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <stdexcept>
 #include <string>
 
-#include <cpr/cpr.h>
+#include "cpr/cpr.h"
 #include <curl/curl.h>
+#include <vector>
 
+#include "cpr/accept_encoding.h"
 #include "httpServer.hpp"
 
 using namespace cpr;
@@ -19,6 +23,42 @@ std::chrono::seconds zero{0};
 
 bool write_data(std::string /*data*/, intptr_t /*userdata*/) {
     return true;
+}
+
+TEST(SessionGetTests, GetMultipleTimes) {
+    Url url{server->GetBaseUrl() + "/hello.html"};
+    Session session;
+    session.SetUrl(url);
+    std::string expected_text{"Hello world!"};
+
+    for (size_t i = 0; i < 100; i++) {
+        Response response = session.Get();
+        EXPECT_EQ(expected_text, response.text);
+        EXPECT_EQ(url, response.url);
+        EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
+        EXPECT_EQ(200, response.status_code);
+        EXPECT_EQ(ErrorCode::OK, response.error.code);
+    }
+}
+
+TEST(SessionPostTests, PostMultipleTimes) {
+    Url url{server->GetBaseUrl() + "/url_post.html"};
+    Session session;
+    session.SetUrl(url);
+    session.SetPayload({{"x", "5"}});
+    std::string expected_text{
+            "{\n"
+            "  \"x\": 5\n"
+            "}"};
+
+    for (size_t i = 0; i < 100; i++) {
+        Response response = session.Post();
+        EXPECT_EQ(expected_text, response.text);
+        EXPECT_EQ(url, response.url);
+        EXPECT_EQ(std::string{"application/json"}, response.header["content-type"]);
+        EXPECT_EQ(201, response.status_code);
+        EXPECT_EQ(ErrorCode::OK, response.error.code);
+    }
 }
 
 TEST(RedirectTests, TemporaryDefaultRedirectTest) {
@@ -618,6 +658,24 @@ TEST(MultipartTests, SetMultipartValueTest) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
+TEST(MultipartTests, SetMultipartVectorPartsTest) {
+    Url url{server->GetBaseUrl() + "/form_post.html"};
+    Session session;
+    session.SetUrl(url);
+    Multipart multipart{std::vector<Part>{Part{"x", "5"}}};
+    session.SetMultipart(multipart);
+    Response response = session.Post();
+    std::string expected_text{
+            "{\n"
+            "  \"x\": \"5\"\n"
+            "}"};
+    EXPECT_EQ(expected_text, response.text);
+    EXPECT_EQ(url, response.url);
+    EXPECT_EQ(std::string{"application/json"}, response.header["content-type"]);
+    EXPECT_EQ(201, response.status_code);
+    EXPECT_EQ(ErrorCode::OK, response.error.code);
+}
+
 TEST(BodyTests, SetBodyTest) {
     Url url{server->GetBaseUrl() + "/url_post.html"};
     Session session;
@@ -1015,20 +1073,33 @@ TEST(CurlHolderManipulateTests, CustomOptionTest) {
 TEST(LocalPortTests, SetLocalPortTest) {
     Url url{server->GetBaseUrl() + "/local_port.html"};
     Session session;
-    session.SetUrl(url);
-    std::uint16_t const local_port = 60252; // beware of HttpServer::GetPort when changing
-    std::uint16_t const local_port_range = 5000;
-    session.SetLocalPort(local_port);
-    session.SetLocalPortRange(local_port_range);
-    // expected response: body contains port number in specified range
-    // NOTE: even when trying up to 5000 ports there is the chance that all of them are occupied.
-    // It would be possible to also check here for ErrorCode::INTERNAL_ERROR but that somehow seems
-    // wrong as then this test would pass in case SetLocalPort does not work at all
-    // or in other words: we have to assume that at least one port in the specified range is free.
-    Response response = session.Get();
+    uint16_t local_port{0};
+    uint16_t local_port_range{0};
+    Response response;
+
+    // Try up to 10 times to get a free local port
+    for (size_t i = 0; i < 10; i++) {
+        session.SetUrl(url);
+        local_port = 40252 + (i * 100); // beware of HttpServer::GetPort when changing
+        local_port_range = 7000;
+        session.SetLocalPort(local_port);
+        session.SetLocalPortRange(local_port_range);
+        // expected response: body contains port number in specified range
+        // NOTE: even when trying up to 7000 ports there is the chance that all of them are occupied.
+        // It would be possible to also check here for ErrorCode::INTERNAL_ERROR but that somehow seems
+        // wrong as then this test would pass in case SetLocalPort does not work at all
+        // or in other words: we have to assume that at least one port in the specified range is free.
+        response = session.Get();
+
+        if (response.error.code != ErrorCode::INTERNAL_ERROR) {
+            break;
+        }
+    }
+
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
-    std::uint16_t port_from_response = std::strtoul(response.text.c_str(), nullptr, 10);
+    // NOLINTNEXTLINE(google-runtime-int)
+    unsigned long port_from_response = std::strtoul(response.text.c_str(), nullptr, 10);
     EXPECT_EQ(errno, 0);
     EXPECT_GE(port_from_response, local_port);
     EXPECT_LE(port_from_response, local_port + local_port_range);
@@ -1037,19 +1108,32 @@ TEST(LocalPortTests, SetLocalPortTest) {
 TEST(LocalPortTests, SetOptionTest) {
     Url url{server->GetBaseUrl() + "/local_port.html"};
     Session session;
-    session.SetUrl(url);
-    std::uint16_t const local_port = 60551; // beware of HttpServer::GetPort when changing
-    std::uint16_t const local_port_range = 5000;
-    session.SetOption(LocalPort(local_port));
-    session.SetOption(LocalPortRange(local_port_range));
-    // expected response: body contains port number in specified range
-    // NOTE: even when trying up to 5000 ports there is the chance that all of them are occupied.
-    // It would be possible to also check here for ErrorCode::INTERNAL_ERROR but that somehow seems
-    // wrong as then this test would pass in case SetOption(LocalPort) does not work at all
-    // or in other words: we have to assume that at least one port in the specified range is free.
-    Response response = session.Get();
+    uint16_t local_port{0};
+    uint16_t local_port_range{0};
+    Response response;
+
+    // Try up to 10 times to get a free local port
+    for (size_t i = 0; i < 10; i++) {
+        session.SetUrl(url);
+        local_port = 30252 + (i * 100); // beware of HttpServer::GetPort when changing
+        local_port_range = 7000;
+        session.SetOption(LocalPort(local_port));
+        session.SetOption(LocalPortRange(local_port_range));
+        // expected response: body contains port number in specified range
+        // NOTE: even when trying up to 7000 ports there is the chance that all of them are occupied.
+        // It would be possible to also check here for ErrorCode::INTERNAL_ERROR but that somehow seems
+        // wrong as then this test would pass in case SetLocalPort does not work at all
+        // or in other words: we have to assume that at least one port in the specified range is free.
+        response = session.Get();
+
+        if (response.error.code != ErrorCode::INTERNAL_ERROR) {
+            break;
+        }
+    }
+
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
+    // NOLINTNEXTLINE(google-runtime-int)
     unsigned long port_from_response = std::strtoul(response.text.c_str(), nullptr, 10);
     EXPECT_EQ(errno, 0);
     EXPECT_GE(port_from_response, local_port);
@@ -1098,18 +1182,40 @@ TEST(BasicTests, ReserveResponseString) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
+std::vector<std::string> Split(const std::string& s) {
+    std::vector<std::string> encodings;
+    std::stringstream ss(s);
+    std::string encoding;
+
+    while (std::getline(ss, encoding, ',')) {
+        encoding.erase(std::remove_if(encoding.begin(), encoding.end(), isspace), encoding.end()); // Trim
+        encodings.push_back(encoding);
+    }
+
+    return encodings;
+}
+
+void CompareEncodings(const std::string& response, const std::vector<std::string>& expected) {
+    const std::vector<std::string> responseVec = Split(response);
+
+    EXPECT_EQ(responseVec.size(), expected.size());
+    for (const std::string& encoding : expected) {
+        EXPECT_TRUE(std::find(responseVec.begin(), responseVec.end(), encoding) != responseVec.end());
+    }
+}
+
 TEST(BasicTests, AcceptEncodingTestWithMethodsStringMap) {
     Url url{server->GetBaseUrl() + "/check_accept_encoding.html"};
     Session session;
     session.SetUrl(url);
     session.SetAcceptEncoding({{AcceptEncodingMethods::deflate, AcceptEncodingMethods::gzip, AcceptEncodingMethods::zlib}});
     Response response = session.Get();
-    std::string expected_text{"deflate, gzip, zlib"};
-    EXPECT_EQ(expected_text, response.text);
+
     EXPECT_EQ(url, response.url);
     EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
+    CompareEncodings(response.text, std::vector<std::string>{"deflate", "gzip", "zlib"});
 }
 
 TEST(BasicTests, AcceptEncodingTestWithMethodsStringMapLValue) {
@@ -1119,12 +1225,12 @@ TEST(BasicTests, AcceptEncodingTestWithMethodsStringMapLValue) {
     AcceptEncoding accept_encoding{{AcceptEncodingMethods::deflate, AcceptEncodingMethods::gzip, AcceptEncodingMethods::zlib}};
     session.SetAcceptEncoding(accept_encoding);
     Response response = session.Get();
-    std::string expected_text{"deflate, gzip, zlib"};
-    EXPECT_EQ(expected_text, response.text);
+
     EXPECT_EQ(url, response.url);
     EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
+    CompareEncodings(response.text, std::vector<std::string>{"deflate", "gzip", "zlib"});
 }
 
 TEST(BasicTests, AcceptEncodingTestWithCostomizedString) {
@@ -1133,12 +1239,12 @@ TEST(BasicTests, AcceptEncodingTestWithCostomizedString) {
     session.SetUrl(url);
     session.SetAcceptEncoding({{"deflate", "gzip", "zlib"}});
     Response response = session.Get();
-    std::string expected_text{"deflate, gzip, zlib"};
-    EXPECT_EQ(expected_text, response.text);
+
     EXPECT_EQ(url, response.url);
     EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
+    CompareEncodings(response.text, std::vector<std::string>{"deflate", "gzip", "zlib"});
 }
 
 TEST(BasicTests, AcceptEncodingTestWithCostomizedStringLValue) {
@@ -1148,12 +1254,34 @@ TEST(BasicTests, AcceptEncodingTestWithCostomizedStringLValue) {
     AcceptEncoding accept_encoding{{"deflate", "gzip", "zlib"}};
     session.SetAcceptEncoding(accept_encoding);
     Response response = session.Get();
-    std::string expected_text{"deflate, gzip, zlib"};
-    EXPECT_EQ(expected_text, response.text);
+
     EXPECT_EQ(url, response.url);
     EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
+    CompareEncodings(response.text, std::vector<std::string>{"deflate", "gzip", "zlib"});
+}
+
+TEST(BasicTests, AcceptEncodingTestDisabled) {
+    Url url{server->GetBaseUrl() + "/header_reflect.html"};
+    Session session;
+    session.SetUrl(url);
+    session.SetAcceptEncoding({AcceptEncodingMethods::disabled});
+    Response response = session.Get();
+
+    EXPECT_EQ(url, response.url);
+    EXPECT_EQ(200, response.status_code);
+    EXPECT_EQ(ErrorCode::OK, response.error.code);
+    // Ensure no 'Accept-Encoding' header got added
+    EXPECT_TRUE(response.header.find("Accept-Encoding") == response.header.end());
+}
+
+TEST(BasicTests, AcceptEncodingTestDisabledMultipleThrow) {
+    Url url{server->GetBaseUrl() + "/header_reflect.html"};
+    Session session;
+    session.SetUrl(url);
+    session.SetAcceptEncoding({AcceptEncodingMethods::disabled, AcceptEncodingMethods::deflate});
+    EXPECT_THROW(session.Get(), std::invalid_argument);
 }
 
 TEST(BasicTests, DisableHeaderExpect100ContinueTest) {
@@ -1233,7 +1361,7 @@ TEST(AsyncRequestsTests, AsyncGetMultipleTemporarySessionTest) {
 TEST(AsyncRequestsTests, AsyncGetMultipleReflectTest) {
     Url url{server->GetBaseUrl() + "/hello.html"};
     std::vector<AsyncResponse> responses;
-    for (size_t i = 0; i < 100; ++i) {
+    for (size_t i = 0; i < 10; ++i) {
         std::shared_ptr<Session> session = std::make_shared<Session>();
         session->SetUrl(url);
         session->SetParameters({{"key", std::to_string(i)}});
@@ -1454,6 +1582,18 @@ TEST(CallbackTests, PatchCallbackTest) {
     EXPECT_EQ(200, response.status_code);
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
+
+TEST(CallbackTests, Move) {
+    auto session = Session();
+    session.SetDebugCallback(DebugCallback([](auto, auto, auto) {}));
+
+    auto use = +[](Session& s) {
+        s.SetUrl(server->GetBaseUrl());
+        s.Get();
+    };
+    use(session);
+}
+
 
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);

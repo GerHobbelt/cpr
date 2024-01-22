@@ -6,7 +6,9 @@
 #include <functional>
 #include <future>
 #include <memory>
+#include <optional>
 #include <queue>
+#include <variant>
 
 #include "cpr/accept_encoding.h"
 #include "cpr/async_wrapper.h"
@@ -52,11 +54,11 @@ class Session : public std::enable_shared_from_this<Session> {
   public:
     Session();
     Session(const Session& other) = delete;
-    Session(Session&& old) = default;
+    Session(Session&& old) = delete;
 
     ~Session() = default;
 
-    Session& operator=(Session&& old) noexcept = default;
+    Session& operator=(Session&& old) noexcept = delete;
     Session& operator=(const Session& other) = delete;
 
     void SetUrl(const Url& url);
@@ -230,8 +232,8 @@ class Session : public std::enable_shared_from_this<Session> {
     friend MultiPerform;
 
 
-    bool hasBodyOrPayload_{false};
     bool chunkedTransferEncoding_{false};
+    std::variant<std::monostate, cpr::Payload, cpr::Body, cpr::Multipart> content_{std::monostate{}};
     std::shared_ptr<CurlHolder> curl_;
     Url url_;
     Parameters parameters_;
@@ -239,16 +241,22 @@ class Session : public std::enable_shared_from_this<Session> {
     ProxyAuthentication proxyAuth_;
     Header header_;
     AcceptEncoding acceptEncoding_;
-    /**
-     * Will be set by the read callback.
-     * Ensures that the "Transfer-Encoding" is set to "chunked", if not overriden in header_.
-     **/
-    ReadCallback readcb_;
-    HeaderCallback headercb_;
-    WriteCallback writecb_;
-    ProgressCallback progresscb_;
-    DebugCallback debugcb_;
-    CancellationCallback cancellationcb_;
+
+
+    struct Callbacks {
+        /**
+         * Will be set by the read callback.
+         * Ensures that the "Transfer-Encoding" is set to "chunked", if not overriden in header_.
+         **/
+        ReadCallback readcb_;
+        HeaderCallback headercb_;
+        WriteCallback writecb_;
+        ProgressCallback progresscb_;
+        DebugCallback debugcb_;
+        CancellationCallback cancellationcb_;
+    };
+
+    std::unique_ptr<Callbacks> cbs_{std::make_unique<Callbacks>()};
 
     size_t response_string_reserve_size_{0};
     std::string response_string_;
@@ -261,11 +269,26 @@ class Session : public std::enable_shared_from_this<Session> {
     Response makeRequest();
     Response proceed();
     Response intercept();
+    /**
+     * Prepares the curl object for a request with everything used by all requests.
+     **/
+    void prepareCommonShared();
+    /**
+     * Prepares the curl object for a request with everything used by all non download related requests.
+     **/
     void prepareCommon();
+    /**
+     * Prepares the curl object for a request with everything used by the download request.
+     **/
     void prepareCommonDownload();
-    void SetHeaderInternal();
+    void prepareHeader();
     std::shared_ptr<Session> GetSharedPtrFromThis();
     CURLcode DoEasyPerform();
+    void prepareBodyPayloadOrMultipart() const;
+    /**
+     * Returns true in case content_ is of type cpr::Body or cpr::Payload.
+     **/
+    [[nodiscard]] bool hasBodyOrPayload() const;
 };
 
 template <typename Then>

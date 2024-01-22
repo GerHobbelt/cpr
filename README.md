@@ -93,7 +93,7 @@ Add the following to your `CMakeLists.txt`.
 ```cmake
 include(FetchContent)
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
-                         GIT_TAG 0817715923c9705e68994eb52ef9df3f6845beba) # The commit hash for 1.10.x. Replace with the latest from: https://github.com/libcpr/cpr/releases
+                         GIT_TAG 3b15fa82ea74739b574d705fea44959b58142eb8) # Replace with your desired git commit from: https://github.com/libcpr/cpr/releases
 FetchContent_MakeAvailable(cpr)
 ```
 
@@ -112,17 +112,27 @@ If you prefer not to use `fetch_content`, you can download, build, and install t
 
 **Note:** this feature is feasible only if CPR_USE_SYSTEM_CURL is set. (see [#645](https://github.com/libcpr/cpr/pull/645))
 ```Bash
-$ git clone https://github.com/libcpr/cpr.git
-$ cd cpr && mkdir build && cd build
-$ cmake .. -DCPR_USE_SYSTEM_CURL=ON
-$ cmake --build .
-$ sudo cmake --install .
+git clone https://github.com/libcpr/cpr.git
+cd cpr && mkdir build && cd build
+cmake .. -DCPR_USE_SYSTEM_CURL=ON
+cmake --build . --parallel
+sudo cmake --install .
 ```
 In your `CMakeLists.txt`:
 ```cmake
 find_package(cpr REQUIRED)
 add_executable(your_target_name your_target_name.cpp)
 target_link_libraries(your_target_name PRIVATE cpr::cpr)
+```
+
+#### Tests
+`cpr` provides a bunch of tests that can be executed via the following commands.
+```Bash
+git clone https://github.com/libcpr/cpr.git
+cd cpr && mkdir build && cd build
+cmake .. -DCPR_BUILD_TESTS=ON # There are other test related options like 'CPR_BUILD_TESTS_SSL' and 'CPR_BUILD_TESTS_PROXY'
+cmake --build . --parallel
+ctest -VV # -VV is optional since it enables verbose output
 ```
 
 ### Bazel
