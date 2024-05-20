@@ -54,11 +54,11 @@ class Session : public std::enable_shared_from_this<Session> {
   public:
     Session();
     Session(const Session& other) = delete;
-    Session(Session&& old) = default;
+    Session(Session&& old) = delete;
 
     ~Session() = default;
 
-    Session& operator=(Session&& old) noexcept = default;
+    Session& operator=(Session&& old) noexcept = delete;
     Session& operator=(const Session& other) = delete;
 
     void SetUrl(const Url& url);
@@ -269,7 +269,17 @@ class Session : public std::enable_shared_from_this<Session> {
     Response makeRequest();
     Response proceed();
     Response intercept();
+    /**
+     * Prepares the curl object for a request with everything used by all requests.
+     **/
+    void prepareCommonShared();
+    /**
+     * Prepares the curl object for a request with everything used by all non download related requests.
+     **/
     void prepareCommon();
+    /**
+     * Prepares the curl object for a request with everything used by the download request.
+     **/
     void prepareCommonDownload();
     void prepareHeader();
     std::shared_ptr<Session> GetSharedPtrFromThis();
