@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <ctime>
 #include <curl/curl.h>
 #include <fstream>
@@ -36,7 +37,7 @@
 
 namespace cpr::util {
 
-enum class CurlHTTPCookieField : size_t {
+enum class CurlHTTPCookieField : uint8_t {
     Domain = 0,
     IncludeSubdomains,
     Path,
@@ -70,16 +71,9 @@ Cookies parseCookies(curl_slist* raw_cookies) {
 
 Header parseHeader(const std::string& headers, std::string* status_line, std::string* reason) {
     Header header;
-    std::vector<std::string> lines;
     std::istringstream stream(headers);
-    {
-        std::string line;
-        while (std::getline(stream, line, '\n')) {
-            lines.push_back(line);
-        }
-    }
-
-    for (std::string& line : lines) {
+    std::string line;
+    while (std::getline(stream, line, '\n')) {
         if (line.substr(0, 5) == "HTTP/") {
             // set the status_line if it was given
             if ((status_line != nullptr) || (reason != nullptr)) {
@@ -104,7 +98,7 @@ Header parseHeader(const std::string& headers, std::string* status_line, std::st
             header.clear();
         }
 
-        if (line.length() > 0) {
+        if (!line.empty()) {
             const size_t found = line.find(':');
             if (found != std::string::npos) {
                 std::string value = line.substr(found + 1);

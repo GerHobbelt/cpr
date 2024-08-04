@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -31,6 +32,7 @@
 #include "cpr/curlholder.h"
 #include "cpr/error.h"
 #include "cpr/file.h"
+#include "cpr/filesystem.h" // IWYU pragma: keep
 #include "cpr/http_version.h"
 #include "cpr/interceptor.h"
 #include "cpr/interface.h"
@@ -139,11 +141,14 @@ Session::Session() : curl_(new CurlHolder()) {
 #if LIBCURL_VERSION_NUM >= 0x071900 // 7.25.0
     curl_easy_setopt(curl_->handle, CURLOPT_TCP_KEEPALIVE, 1L);
 #endif
+    current_interceptor_ = interceptors_.end();
+    first_interceptor_ = interceptors_.end();
 }
 
 Response Session::makeDownloadRequest() {
-    if (!interceptors_.empty()) {
-        return intercept();
+    const std::optional<Response> r = intercept();
+    if (r.has_value()) {
+        return r.value();
     }
 
     const CURLcode curl_error = DoEasyPerform();
@@ -262,11 +267,13 @@ void Session::prepareCommonDownload() {
 }
 
 Response Session::makeRequest() {
-    if (!interceptors_.empty()) {
-        return intercept();
+    const std::optional<Response> r = intercept();
+    if (r.has_value()) {
+        return r.value();
     }
 
     const CURLcode curl_error = DoEasyPerform();
+
     return Complete(curl_error);
 }
 
@@ -377,6 +384,10 @@ void Session::SetAuth(const Authentication& auth) {
             break;
         case AuthMode::NTLM:
             curl_easy_setopt(curl_->handle, CURLOPT_HTTPAUTH, CURLAUTH_NTLM);
+            curl_easy_setopt(curl_->handle, CURLOPT_USERPWD, auth.GetAuthString());
+            break;
+        case AuthMode::NEGOTIATE:
+            curl_easy_setopt(curl_->handle, CURLOPT_HTTPAUTH, CURLAUTH_NEGOTIATE);
             curl_easy_setopt(curl_->handle, CURLOPT_USERPWD, auth.GetAuthString());
             break;
     }
@@ -880,7 +891,10 @@ Response Session::CompleteDownload(CURLcode curl_error) {
 }
 
 void Session::AddInterceptor(const std::shared_ptr<Interceptor>& pinterceptor) {
-    interceptors_.push(pinterceptor);
+    // Shall only add before first interceptor run
+    assert(current_interceptor_ == interceptors_.end());
+    interceptors_.push_back(pinterceptor);
+    first_interceptor_ = interceptors_.begin();
 }
 
 Response Session::proceed() {
@@ -888,11 +902,26 @@ Response Session::proceed() {
     return makeRequest();
 }
 
-Response Session::intercept() {
-    // At least one interceptor exists -> Execute its intercept function
-    const std::shared_ptr<Interceptor> interceptor = interceptors_.front();
-    interceptors_.pop();
-    return interceptor->intercept(*this);
+const std::optional<Response> Session::intercept() {
+    if (current_interceptor_ == interceptors_.end()) {
+        current_interceptor_ = first_interceptor_;
+    } else {
+        current_interceptor_++;
+    }
+
+    if (current_interceptor_ != interceptors_.end()) {
+        auto icpt = current_interceptor_;
+        // Nested makeRequest() start at first_interceptor_, thus excluding previous interceptors.
+        first_interceptor_ = current_interceptor_;
+        ++first_interceptor_;
+
+        const std::optional<Response> r = (*current_interceptor_)->intercept(*this);
+
+        first_interceptor_ = icpt;
+
+        return r;
+    }
+    return std::nullopt;
 }
 
 void Session::prepareBodyPayloadOrMultipart() const {
@@ -928,6 +957,9 @@ void Session::prepareBodyPayloadOrMultipart() const {
 
                     if (file.hasOverridenFilename()) {
                         curl_mime_filename(mimePart, file.overriden_filename.c_str());
+                    } else {
+                        // NOLINTNEXTLINE (misc-include-cleaner)
+                        curl_mime_filename(mimePart, fs::path(file.filepath).filename().string().c_str());
                     }
                 }
             } else {
