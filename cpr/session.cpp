@@ -1,5 +1,6 @@
 #include "cpr/session.h"
 
+#include <array>
 #include <atomic>
 #include <cassert>
 #include <cstdint>
@@ -180,6 +181,15 @@ void Session::prepareCommonShared() {
             curl_easy_setopt(curl_->handle, CURLOPT_PROXYPASSWORD, proxyAuth_.GetPassword(protocol));
         }
     }
+    // handle NO_PROXY override passed through Proxies object
+    // Example: Proxies{"no_proxy": ""} will override environment variable definition with an empty list
+    const std::array<std::string, 2> no_proxy{"no_proxy", "NO_PROXY"};
+    for (const auto& item : no_proxy) {
+        if (proxies_.has(item)) {
+            curl_easy_setopt(curl_->handle, CURLOPT_NOPROXY, proxies_[item].c_str());
+            break;
+        }
+    }
 
 #if LIBCURL_VERSION_NUM >= 0x071506 // 7.21.6
     if (acceptEncoding_.empty()) {
@@ -339,6 +349,10 @@ void Session::UpdateHeader(const Header& header) {
     }
 }
 
+Header& Session::GetHeader() {
+    return header_;
+}
+
 void Session::SetTimeout(const Timeout& timeout) {
     curl_easy_setopt(curl_->handle, CURLOPT_TIMEOUT_MS, timeout.Milliseconds());
 }
@@ -473,6 +487,7 @@ void Session::SetSslOptions(const SslOptions& options) {
         // NOLINTNEXTLINE (readability-container-data-pointer)
         blob.data = &key_blob[0];
         blob.len = key_blob.length();
+        blob.flags = CURL_BLOB_COPY;
         curl_easy_setopt(curl_->handle, CURLOPT_SSLKEY_BLOB, &blob);
         if (!options.key_type.empty()) {
             curl_easy_setopt(curl_->handle, CURLOPT_SSLKEYTYPE, options.key_type.c_str());
