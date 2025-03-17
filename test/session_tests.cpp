@@ -778,8 +778,8 @@ TEST(CookiesTests, BasicCookiesTest) {
     Cookies res_cookies{response.cookies};
     std::string expected_text{"Basic Cookies"};
     cpr::Cookies expectedCookies{
-            {"SID", "31d4d96e407aad42", "127.0.0.1", false, "/", true, std::chrono::system_clock::time_point{} + std::chrono::seconds(3905119080)},
-            {"lang", "en-US", "127.0.0.1", false, "/", true, std::chrono::system_clock::time_point{} + std::chrono::seconds(3905119080)},
+            {"SID", "31d4d96e407aad42", "127.0.0.1", false, "/", true, HttpServer::GetCookieExpiresIn100HoursTimePoint()},
+            {"lang", "en-US", "127.0.0.1", false, "/", true, HttpServer::GetCookieExpiresIn100HoursTimePoint()},
     };
     EXPECT_EQ(std::string{"text/html"}, response.header["content-type"]);
     EXPECT_EQ(200, response.status_code);
@@ -1021,11 +1021,11 @@ TEST(DifferentMethodTests, MultipleDeleteHeadPutGetPostTest) {
         {
             session.RemoveContent();
             session.SetUrl(urlMultipartPost);
-            std::string fileContentsBinary{"kn3d0c9j213riknmfd039dj10idn2309cmxkle2rsdj0239mdf"};
+            std::string fileContentsBinary{"this is a binary payload"};
             std::string fileExtension = ".myfile";
             session.SetMultipart(cpr::Multipart{{"files", cpr::Buffer{fileContentsBinary.begin(), fileContentsBinary.end(), "myfile.jpg"}}, {"file_types", "[\"" + fileExtension + "\"]"}});
             Response response = session.Post();
-            std::string expected_text{"{\n  \"files\": \"myfile.jpg=kn3d0c9j213riknmfd039dj10idn2309cmxkle2rsdj0239mdf\",\n  \"file_types\": \"[\".myfile\"]\"\n}"};
+            std::string expected_text{"{\n  \"files\": \"myfile.jpg=this is a binary payload\",\n  \"file_types\": \"[\".myfile\"]\"\n}"};
             EXPECT_EQ(expected_text, response.text);
             EXPECT_EQ(urlMultipartPost, response.url);
             EXPECT_EQ(201, response.status_code);
