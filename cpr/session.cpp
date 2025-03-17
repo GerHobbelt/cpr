@@ -184,8 +184,8 @@ void Session::prepareCommonShared() {
     // handle NO_PROXY override passed through Proxies object
     // Example: Proxies{"no_proxy": ""} will override environment variable definition with an empty list
     const std::array<std::string, 2> no_proxy{"no_proxy", "NO_PROXY"};
-    for (const auto& item : no_proxy) {
-        if (proxies_.has(item)) {
+    for (const auto& item : no_proxy) { // cppcheck-suppress useStlAlgorithm
+        if (proxies_.has(item)) {       // cppcheck-suppress useStlAlgorithm
             curl_easy_setopt(curl_->handle, CURLOPT_NOPROXY, proxies_[item].c_str());
             break;
         }
@@ -266,6 +266,27 @@ Response Session::makeRequest() {
 void Session::SetLimitRate(const LimitRate& limit_rate) {
     curl_easy_setopt(curl_->handle, CURLOPT_MAX_RECV_SPEED_LARGE, limit_rate.downrate);
     curl_easy_setopt(curl_->handle, CURLOPT_MAX_SEND_SPEED_LARGE, limit_rate.uprate);
+}
+
+const Content& Session::GetContent() const {
+    return content_;
+}
+
+void Session::RemoveContent() {
+    if (std::holds_alternative<cpr::Payload>(content_)) {
+        curl_easy_setopt(curl_->handle, CURLOPT_POSTFIELDSIZE_LARGE, -1);
+        curl_easy_setopt(curl_->handle, CURLOPT_COPYPOSTFIELDS, NULL);
+    } else if (std::holds_alternative<cpr::Body>(content_)) {
+        curl_easy_setopt(curl_->handle, CURLOPT_POSTFIELDSIZE_LARGE, -1);
+        curl_easy_setopt(curl_->handle, CURLOPT_COPYPOSTFIELDS, NULL);
+    } else if (std::holds_alternative<cpr::Multipart>(content_)) {
+        // Make sure, we have a empty multipart to start with:
+        if (curl_->multipart) {
+            curl_mime_free(curl_->multipart);
+            curl_->multipart = nullptr;
+        }
+    }
+    content_ = std::monostate{};
 }
 
 void Session::SetReadCallback(const ReadCallback& read) {
@@ -350,6 +371,10 @@ void Session::UpdateHeader(const Header& header) {
 }
 
 Header& Session::GetHeader() {
+    return header_;
+}
+
+const Header& Session::GetHeader() const {
     return header_;
 }
 
@@ -453,7 +478,7 @@ void Session::SetBody(Body&& body) {
 
 void Session::SetLowSpeed(const LowSpeed& low_speed) {
     curl_easy_setopt(curl_->handle, CURLOPT_LOW_SPEED_LIMIT, low_speed.limit);
-    curl_easy_setopt(curl_->handle, CURLOPT_LOW_SPEED_TIME, low_speed.time);
+    curl_easy_setopt(curl_->handle, CURLOPT_LOW_SPEED_TIME, low_speed.time); // cppcheck-suppress y2038-unsafe-call
 }
 
 void Session::SetVerifySsl(const VerifySsl& verify) {
@@ -907,7 +932,7 @@ const std::optional<Response> Session::intercept() {
     if (current_interceptor_ == interceptors_.end()) {
         current_interceptor_ = first_interceptor_;
     } else {
-        current_interceptor_++;
+        ++current_interceptor_;
     }
 
     if (current_interceptor_ != interceptors_.end()) {
