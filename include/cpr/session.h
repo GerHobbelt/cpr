@@ -114,12 +114,12 @@ class Session : public std::enable_shared_from_this<Session> {
     void SetLimitRate(const LimitRate& limit_rate);
 
     /**
-     * Returns a reference to the content sent in previous request
-     */
+      * Returns a reference to the content sent in previous request.
+      **/
     [[nodiscard]] const Content& GetContent() const;
 
     /**
-     * Removes the content sent in previous request, so it will not be sent with the next request
+     * Removes the content sent in previous request from internal state, so it will not be sent with the next request
      * Call this before doing a request that is specified not to send a body, e.g. GET
      */
     void RemoveContent();
