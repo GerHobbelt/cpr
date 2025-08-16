@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
 #include <sstream>
 
@@ -95,6 +95,24 @@ TEST(ProxyTests, ReferenceProxySessionTest) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
+#if defined(_MSC_VER)
+static int setenv(const char* name, const char* value, int overwrite) {
+    int errcode = 0;
+    if (!overwrite) {
+        size_t envsize = 0;
+        errcode = getenv_s(&envsize, NULL, 0, name);
+        if (errcode || envsize)
+            return errcode;
+    }
+    return _putenv_s(name, value);
+}
+// You can remove a variable from the environment by specifying an empty string (that is, "") for value_string.
+// https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/putenv-s-wputenv-s?view=msvc-170
+static int unsetenv(const char* name) {
+    return _putenv_s(name, "");
+}
+#endif
+
 TEST(ProxyTests, NoProxyTest) {
     setenv("NO_PROXY", "httpbin.org", 1);
     try {
@@ -143,6 +161,7 @@ TEST(ProxyTests, NoProxyTest) {
 #define main      cpr_proxy_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
