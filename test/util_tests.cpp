@@ -225,6 +225,7 @@ TEST(UtilIsTrueTests, FalseTest) {
 #define main      cpr_util_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

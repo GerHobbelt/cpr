@@ -189,6 +189,7 @@ fs::path GetBasePath(const std::string& execPath) {
 #define main      cpr_ssl_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

@@ -161,6 +161,7 @@ TEST(AlternatingTests, PutPostTest) {
 #define main      cpr_alternating_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

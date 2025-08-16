@@ -1683,6 +1683,7 @@ TEST(CallbackTests, Move) {
 #define main      cpr_session_test_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);

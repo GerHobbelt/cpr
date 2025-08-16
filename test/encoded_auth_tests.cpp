@@ -19,8 +19,8 @@ TEST(EncodedAuthenticationTests, UnicodeEncoderTest) {
 #define main      cpr_encoded_auth_tests_main
 #endif
 
-int main(int argc, const char** argv)
-{
+extern "C"
+int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

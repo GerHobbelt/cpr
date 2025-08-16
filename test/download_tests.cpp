@@ -15,7 +15,7 @@
 
 static cpr::HttpServer* server = new cpr::HttpServer();
 
-bool write_data(const std::string_view& /*data*/, intptr_t /*userdata*/) {
+static bool write_data(const std::string_view& /*data*/, intptr_t /*userdata*/) {
     return true;
 }
 
@@ -151,6 +151,7 @@ TEST(DownloadTests, GetDownloadFileLength) {
 #define main      cpr_download_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);

@@ -430,7 +430,13 @@ TEST(MultiAsyncCancelTests, TestIntervalOfProgressCallsLowSpeed) {
     std::this_thread::sleep_for(std::chrono::milliseconds{101});
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main cpr_multiasync_tests_main
+#endif
+
+extern "C"
+int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     ::testing::AddGlobalTestEnvironment(synchro_env);

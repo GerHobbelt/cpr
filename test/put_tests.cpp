@@ -274,6 +274,7 @@ TEST(PutTests, AsyncMultiplePutUnallowedTest) {
 #define main      cpr_put_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

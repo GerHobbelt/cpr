@@ -102,6 +102,7 @@ TEST(ProxyAuthTests, ReferenceProxySessionTest) {
 #define main      cpr_proxy_auth_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

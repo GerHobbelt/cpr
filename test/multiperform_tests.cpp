@@ -15,7 +15,7 @@ using namespace cpr;
 
 static HttpServer* server = new HttpServer();
 
-bool write_data(const std::string_view& /*data*/, intptr_t /*userdata*/) {
+static bool write_data(const std::string_view& /*data*/, intptr_t /*userdata*/) {
     return true;
 }
 
@@ -675,7 +675,13 @@ TEST(MultiperformAPITests, MultiperformApiSinglePostTest) {
     EXPECT_EQ(ErrorCode::OK, responses.at(0).error.code);
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main cpr_multiperform_tests_main
+#endif
+
+extern "C"
+int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();

@@ -19,7 +19,7 @@ cpr::HttpServer* server = new cpr::HttpServer();
 std::optional<cpr::fs::path> baseDirPath{std::nullopt};
 } // namespace
 
-cpr::fs::path GetBasePath(const std::string& execPath) {
+static cpr::fs::path GetBasePath(const std::string& execPath) {
     return cpr::fs::path(cpr::fs::path{execPath}.parent_path().string() + "/").make_preferred();
 }
 
@@ -90,7 +90,13 @@ TEST(FileUploadTests, ChineseFileName) {
     EXPECT_EQ(cpr::ErrorCode::OK, response.error.code);
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main cpr_file_upload_tests_main
+#endif
+
+extern "C"
+int main(int argc, const char** argv) {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic)
     baseDirPath = std::make_optional<cpr::fs::path>(cpr::fs::path{GetBasePath(argv[0]).string() + "data/"});
 

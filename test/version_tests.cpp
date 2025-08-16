@@ -64,6 +64,7 @@ TEST(VersionTests, VersionNumExists) {
 #define main      cpr_version_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

@@ -139,6 +139,7 @@ TEST(PrepareTests, MultipleDeleteHeadPutGetPostTest) {
 #define main      cpr_prepare_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

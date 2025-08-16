@@ -257,6 +257,7 @@ TEST(DeleteTests, AsyncMultipleDeleteUnallowedTest) {
 #define main      cpr_delete_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

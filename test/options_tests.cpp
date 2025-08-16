@@ -71,6 +71,7 @@ TEST(OptionsTests, AsyncSpecificUrlTest) {
 #define main      cpr_options_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

@@ -274,6 +274,7 @@ TEST(PatchTests, AsyncMultiplePatchUnallowedTest) {
 #define main      cpr_patch_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

@@ -932,6 +932,7 @@ TEST(CallbackDataTests, CallbackDebugFunctionTextTest) {
 #define main      cpr_callback_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

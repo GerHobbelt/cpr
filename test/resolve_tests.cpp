@@ -37,6 +37,12 @@ TEST(ResolveTests, RedirectMultiple) {
     EXPECT_EQ(ErrorCode::OK, response.error.code);
 }
 
+
+#if defined(BUILD_MONOLITHIC)
+#define main cpr_resolve_tests_main
+#endif
+
+extern "C"
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);

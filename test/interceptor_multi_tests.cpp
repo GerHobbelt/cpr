@@ -463,7 +463,13 @@ TEST(InterceptorMultiTest, ThreeInterceptorMultisTest) {
     EXPECT_EQ(expected_error_code, response.front().error.code);
 }
 
-int main(int argc, char** argv) {
+
+#if defined(BUILD_MONOLITHIC)
+#define main cpr_interceptor_multi_tests_main
+#endif
+
+extern "C"
+int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();

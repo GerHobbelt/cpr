@@ -225,6 +225,7 @@ TEST(HeadTests, BasicHeadAsyncTest) {
 #define main      cpr_head_tests_main
 #endif
 
+extern "C"
 int main(int argc, const char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);

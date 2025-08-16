@@ -96,8 +96,8 @@ TEST(ErrorTests, BoolTrueTest) {
 #define main      cpr_error_tests_main
 #endif
 
-int main(int argc, const char** argv)
-{
+extern "C"
+int main(int argc, const char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     ::testing::AddGlobalTestEnvironment(server);
     return RUN_ALL_TESTS();
